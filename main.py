@@ -3,6 +3,7 @@ from random import randint
 from random import random
 from math import sqrt
 from time import sleep
+from timeit import timeit
 
 
 class Vector:
@@ -42,6 +43,9 @@ class Vector:
 
 class Particle:
 
+    # damping > 1, increase speed on collision
+    # damping = 1, no damping
+    # damping < 1, damping
     damping = 1.0
 
     def __init__(self, x, y, vx=0, vy=0, ax=0, ay=-1):
@@ -60,21 +64,26 @@ class Particle:
         return "particle at " + str(self.location)
 
 
+def _random(a=-1, b=1):
+    "Returns a random float between a and b"
+    return random() * abs(a - b) + a
+
+
 class ParticleSystem:
     particles = []
 
     def __init__(self, num_particles: int):
         if ParticleSystem.particles == []:
-            ParticleSystem.particles = [Particle(randint(0, canvas_width), randint(0, canvas_height), vx=random(), vy=random()) for _ in range(num_particles)]
+            ParticleSystem.particles = [Particle(
+                randint(0, canvas_width), randint(0, canvas_height),
+                vx=_random(), vy=_random(),
+                ax=_random(), ay=_random()) for _ in range(num_particles)]
 
     def _integrate(self, delta_time):
         # calculate speeds from accelerations, and locations from speeds (use verlet integration when I learn how to do it)
         for particle in ParticleSystem.particles:
-            try:
-                particle.velocity += particle.acceleration.scaled(delta_time)
-                particle.location += particle.velocity.scaled(delta_time)
-            except:
-                print(particle)
+            particle.velocity += particle.acceleration.scaled(delta_time)
+            particle.location += particle.velocity.scaled(delta_time)
 
     def _calculate_collision(self):
         # calculate collisions
@@ -101,13 +110,14 @@ class ParticleSystem:
     def simulate(self, delta_time):
         self._check_bounds()
         self._integrate(delta_time)
-        self._calculate_collision()
+        # self._calculate_collision()
 
+NUM_PARTICLES = 2000
 NUM_PARTICLES_PER_CLICK = 10
 FRAME_RATE = 60
 
-canvas_width = 500
-canvas_height = 150
+canvas_width = 200
+canvas_height = 200
 master = tk.Tk()
 master.title("Points")
 w = tk.Canvas(master,
@@ -120,13 +130,13 @@ w = tk.Canvas(master,
 def paint(event):
     w.delete("all")
 
+
     for particle in ParticleSystem.particles:
         draw_point(particle)
 
     #create_explosion(event.x, event.y)
-    ParticleSystem(100).simulate(1/2)
+    ParticleSystem(NUM_PARTICLES).simulate(1/2)
 
-    print([str(particle) for particle in ParticleSystem.particles])
 
 w.pack(expand=tk.YES, fill=tk.BOTH)
 w.bind("<B1-Motion>", paint)
@@ -150,6 +160,6 @@ def create_explosion(x, y):
 
 
 if __name__ == "__main__":
-    p = ParticleSystem(100)
+    p = ParticleSystem(NUM_PARTICLES)
 
     tk.mainloop()
